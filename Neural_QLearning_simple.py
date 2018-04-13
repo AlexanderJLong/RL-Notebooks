@@ -11,53 +11,33 @@ INITIAL_EPSILON = 0.6  # starting value of epsilon
 FINAL_EPSILON = 0.05  # final value of epsilon
 EPSILON_DECAY_STEPS = 1000
 TEST_FREQUENCY = 100  # Num episodes to run before visualizing test accuracy
-
 HIDDEN_NODES = 20
-
 ENV_NAME = 'CartPole-v0'
 EPISODE = 200000  # Episode limitation
 STEP = 200  # Step limitation in an episode
 TEST = 10  # The number of tests to run every TEST_FREQUENCY episodes
-
 env = gym.make(ENV_NAME)
-replay_buffer = []
 epsilon = INITIAL_EPSILON
 STATE_DIM = env.observation_space.shape[0]
 ACTION_DIM = env.action_space.n
-
 
 # Define Network Structure
 state_in = tf.placeholder("float", [1, STATE_DIM])
 action_in = tf.placeholder("float", [1, ACTION_DIM])  # one hot
 target_in = tf.placeholder("float", [1])
 
-h1 = tf.layers.dense(
-    state_in,
-    HIDDEN_NODES,
-    activation=tf.nn.relu
-)
-h2 = tf.layers.dense(
-    h1,
-    HIDDEN_NODES,
-    activation=tf.nn.relu
-)
-
-q_values = tf.layers.dense(
-    h1,
-    ACTION_DIM,
-    activation=lambda x: x
-)
+h1 = tf.layers.dense(state_in, HIDDEN_NODES, activation=tf.nn.relu)
+h2 = tf.layers.dense(h1, HIDDEN_NODES, activation=tf.nn.relu)
+q_values = tf.layers.dense(h2, ACTION_DIM, activation=lambda x: x)
 q_action = tf.reduce_sum(tf.multiply(q_values, action_in), reduction_indices=1)
 
+# Define Loss
 loss = tf.reduce_mean(tf.square(target_in - q_action))
 optimizer = tf.train.AdamOptimizer(0.0003).minimize(loss)
 
 # Start session - Tensorflow housekeeping
 session = tf.InteractiveSession()
 session.run(tf.global_variables_initializer())
-
-# Count the number of times we take a step
-iterations = 0
 
 def explore(state, epsilon):
     Q_estimates = q_values.eval(feed_dict={
@@ -80,7 +60,6 @@ for episode in range(EPISODE):
 
     # Move through env according to e-greedy policy
     for step in range(STEP):
-        iterations += 1
         action = explore(state, epsilon)
 
         next_state, reward, done, _ = env.step(np.argmax(action))
@@ -109,7 +88,7 @@ for episode in range(EPISODE):
         for i in range(TEST):
             state = env.reset()
             for j in range(STEP):
-                #env.render()
+                env.render()
                 action = np.argmax(q_values.eval(feed_dict={
                     state_in: [state]
                     }))
