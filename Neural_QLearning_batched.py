@@ -22,7 +22,7 @@ STATE_DIM = env.observation_space.shape[0]
 ACTION_DIM = env.action_space.n
 
 batch = []
-BATCH_SIZE = 1
+BATCH_SIZE = 500
 
 # Define Network Structure
 state_in = tf.placeholder("float", [None, STATE_DIM])
@@ -67,6 +67,7 @@ for episode in range(EPISODE):
         next_state, reward, done, _ = env.step(np.argmax(action))
         batch.append((state, action, reward, next_state, done))
         if len(batch) == BATCH_SIZE:
+            print("Training")
             state_batch = [data[0] for data in batch]
             action_batch = [data[1] for data in batch]
             reward_batch = [data[2] for data in batch]
@@ -76,7 +77,7 @@ for episode in range(EPISODE):
             })
 
             target_batch = []
-            for i in range(0, BATCH_SIZE-1):
+            for i in range(0, BATCH_SIZE):
                 done_batch = batch[i][4]
                 if done_batch:
                     target_batch.append(reward_batch[i])
